@@ -6,7 +6,7 @@ from tqdm import tqdm
 from datset import FacesDataset
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-from torchvision.models import resnet18
+from torchvision.models import resnet18, ResNet18_Weights
 from torch import nn
 
 import torch.optim as optim
@@ -19,14 +19,14 @@ def show_datapoint(image, label):
     plt.scatter(X, Y, c='black')
     plt.show()
 
-def custom_loss(output, label):
+def custom_loss(output: torch.Tensor, label: torch.Tensor):
     loss = 0
     for i in range(0, 8, 2):
-        loss += torch.linalg.norm(output[i:i+1] - label[i:i+1])**2
-    return loss / 4
+        loss += torch.linalg.norm(output[:, i:i+2] - label[:, i:i+2], dim=1)**2
+    return loss.mean(dim=0) / 4
 
 model = None
-
+model
 def main():
     train_df = pd.read_csv("training.csv")
 
@@ -36,7 +36,7 @@ def main():
 
 
     traindataset = FacesDataset(train_df.iloc[:500])
-    traindataloader = DataLoader(traindataset, batch_size=64, shuffle=False, num_workers=2)
+    traindataloader = DataLoader(traindataset, batch_size=128, shuffle=False, num_workers=4)
     images, labels = next(iter(traindataloader))
     #show_datapoint(images[0], labels[0])
 
@@ -45,7 +45,7 @@ def main():
     model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
 
     criterion = custom_loss
-    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.SGD(model.parameters(), lr=0.007, momentum=0.9)
 
     try:
         for epoch in range(1000):
